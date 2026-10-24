@@ -27,6 +27,9 @@ No new free plan. Locked features use soft-gold Locked buttons linking to packag
 - `worker/chip.mjs`, `checkout.js`: purchase creation, verified payment status and fulfillment.
 - `worker/admin.mjs`, `admin.js`: platform administration, support, storage and customer operations.
 - `worker/support.js`: public support page, configured channels.
+- `worker/boundary.mjs`: strips forged Sites identity headers unless `SEJENAK_TRUST_SITES_IDENTITY=true`.
+- `worker/ratelimit.mjs`: per-device throttling of anonymous guest writes.
+- `worker/preview.mjs`, `worker/assets/og-*.jpg`: server-injected link previews (WhatsApp/Facebook) for `/i/:id` and `/e/:id`; regenerate the JPEGs if card artwork changes.
 - `worker/poster-layout.mjs`, `countdown.mjs`, `qrcode.js`: poster, Malaysia countdown and QR support.
 - `worker/assets`: local E-Kad and marketing artwork. Some sample gallery images use external Unsplash URLs.
 - `scripts/build.mjs`: esbuild bundles Worker, embeds client JS, CSS, HTML and local images. Build output is not a conventional public assets folder.

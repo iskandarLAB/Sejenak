@@ -16,7 +16,7 @@ test('RSVP bots cannot inflate attendance beyond the per-device limit',async()=>
  assert.equal(codes[201],guestLimits.rsvp.burst);assert.equal([...b.m.keys()].filter(k=>k.startsWith('events/'+id+'/rsvps/')).length,guestLimits.rsvp.burst)});
 test('Fake Duit Salam declarations are capped per device',async()=>{
  const id=await event();await b.put('events/'+id+'/payment-qr',png);
- const {codes}=await flood(300,()=>send('/api/salam/'+id,{name:'Bot',amountSen:100000000,requestId:crypto.randomUUID()},'203.0.113.11'));
+ const {codes}=await flood(300,()=>send('/api/salam/'+id,{name:'Bot',amountSen:500000,requestId:crypto.randomUUID()},'203.0.113.11'));
  assert.equal(codes[201],guestLimits.salam.burst);assert.equal([...b.m.keys()].filter(k=>k.startsWith('events/'+id+'/gifts/')).length,guestLimits.salam.burst)});
 test('Photo uploads allow a busy guest but stop a script',async()=>{
  const id=await event(),{codes}=await flood(60,()=>{const f=new FormData();f.set('photo',new Blob([png],{type:'image/png'}),'a.png');f.set('name','Tetamu');return send('/api/guest/'+id+'/posts',f,'203.0.113.12')});
@@ -36,3 +36,8 @@ test('Limit records hash the IP and are removed with the event',async()=>{
  assert.equal(keys.length,1);assert.ok(!keys[0].includes('203.0.113.16'));assert.ok(!new TextDecoder().decode(b.m.get(keys[0])).includes('203.0.113'));
  assert.equal((await api(new Request('https://sejenak.space/api/events/'+id,{method:'DELETE',headers:{'oai-authenticated-user-id':'owner'}}),env)).status,200);
  assert.equal([...b.m.keys()].filter(k=>k.startsWith('events/'+id+'/')).length,0)});
+test('A single Duit Salam declaration is capped at RM5,000',async()=>{
+ const id=await event();await b.put('events/'+id+'/payment-qr',png);
+ assert.equal((await send('/api/salam/'+id,{name:'Pak Long',amountSen:500000,requestId:crypto.randomUUID()},'203.0.113.17')).status,201);
+ const over=await send('/api/salam/'+id,{name:'Bot',amountSen:500001,requestId:crypto.randomUUID()},'203.0.113.17');
+ assert.equal(over.status,400);assert.match((await over.json()).error,/RM5,000/)});

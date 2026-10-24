@@ -30,6 +30,7 @@ No new free plan. Locked features use soft-gold Locked buttons linking to packag
 - `worker/boundary.mjs`: strips forged Sites identity headers unless `SEJENAK_TRUST_SITES_IDENTITY=true`.
 - `worker/ratelimit.mjs`: per-device throttling of anonymous guest writes.
 - `worker/preview.mjs`, `worker/assets/og-*.jpg`: server-injected link previews (WhatsApp/Facebook) for `/i/:id` and `/e/:id`; regenerate the JPEGs if card artwork changes.
+- `worker/imagemeta.mjs`: strips GPS/EXIF/XMP/comments from every uploaded JPEG/PNG/WebP (guest photos, cover, Duit Salam QR), keeping JPEG orientation. Guest photos are also resized to 2560px and given a 720px thumbnail in the browser before upload; media is served `private, no-cache` with ETag so hiding a photo still takes effect immediately.
 - `worker/poster-layout.mjs`, `countdown.mjs`, `qrcode.js`: poster, Malaysia countdown and QR support.
 - `worker/assets`: local E-Kad and marketing artwork. Some sample gallery images use external Unsplash URLs.
 - `scripts/build.mjs`: esbuild bundles Worker, embeds client JS, CSS, HTML and local images. Build output is not a conventional public assets folder.

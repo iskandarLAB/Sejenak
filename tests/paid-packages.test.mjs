@@ -1,4 +1,4 @@
-import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import vm from 'node:vm';import {api,packageQuotas,packageFeatures} from '../worker/api.mjs';import {seedEvent} from './fixtures.mjs';
+import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import vm from 'node:vm';import {api,packageQuotas,packageFeatures} from '../worker/api.mjs';import {seedEvent,tinyJpeg,tinyPng} from './fixtures.mjs';
 const source=fs.readFileSync(new URL('../worker/app.js',import.meta.url),'utf8').replace(/init\(\);\s*$/,'');
 function ui(path='/'){const nodes=new Map(),node=s=>{if(!nodes.has(s))nodes.set(s,{innerHTML:'',value:'',style:{},addEventListener(){},showModal(){},classList:{add(){},remove(){}}});return nodes.get(s)};const c=vm.createContext({document:{querySelector:node},location:{pathname:path,origin:'https://test.site'},window:{},localStorage:{getItem:()=>null},crypto,FormData,console});vm.runInContext(source,c);return{c,node}}
 class Bucket{constructor(){this.m=new Map()}async get(k){const x=this.m.get(k);return x?{json:async()=>JSON.parse(x.v),body:x.v,httpMetadata:x.meta?.httpMetadata}:null}async put(k,v,meta){this.m.set(k,{v,meta})}async delete(k){this.m.delete(k)}async list({prefix}){return {objects:[...this.m].filter(([k])=>k.startsWith(prefix)).map(([key,x])=>({key,size:x.meta?.size??(typeof x.v==='string'?x.v.length:x.v.byteLength)})),truncated:false}}}
@@ -31,18 +31,18 @@ test('Each paid package enforces its feature permissions and its own photo, wish
   assert.equal((await run(path,{method:'PATCH',user:'owner',body:{primaryColor:'#345678',invitation:{template:'minimal',open:true}}})).status,plan==='detik'?402:200);
   assert.equal((await run('/api/invitation/'+e.id)).status,plan==='detik'?402:200);
   assert.equal((await run('/api/rsvp/'+e.id,{method:'POST',body:{name:'Guest',status:'yes',adults:1,children:0,token:crypto.randomUUID()}})).status,plan==='detik'?402:201);
-  const qr=new FormData();qr.set('qr',new Blob([new Uint8Array([137,80,78,71])],{type:'image/png'}),'qr.png');
+  const qr=new FormData();qr.set('qr',new Blob([tinyPng],{type:'image/png'}),'qr.png');
   assert.equal((await run(path+'/payment-qr',{method:'POST',user:'owner',body:qr})).status,plan==='detik'?402:200);
   assert.equal((await run('/api/salam/'+e.id,{method:'POST',body:{name:'Guest',amountSen:1000,requestId:crypto.randomUUID()}})).status,plan==='detik'?402:201);
   assert.equal((await run(path+'/rsvps/export',{user:'owner'})).status,plan==='seindah-kenangan'?200:402);
   assert.equal((await run(path+'/rsvps/export',{user:'other'})).status,403);
-  const cover=new FormData();cover.set('cover',new Blob([new Uint8Array([255,216,255,224])],{type:'image/jpeg'}),'cover.jpg');
+  const cover=new FormData();cover.set('cover',new Blob([tinyJpeg],{type:'image/jpeg'}),'cover.jpg');
   assert.equal((await run(path+'/cover',{method:'POST',user:'owner',body:cover})).status,plan==='seindah-kenangan'?200:402);
   e.coverVersion='stale-cover';await b.put('events/'+e.id+'/event.json',JSON.stringify(e));await b.put('events/'+e.id+'/cover',new Uint8Array([255,216,255,224]),{httpMetadata:{contentType:'image/jpeg'}});
   assert.equal((await run('/api/cover/'+e.id)).status,plan==='seindah-kenangan'?200:404);
   const guest=await(await run('/api/guest/'+e.id)).json();assert.equal(guest.coverVersion,plan==='seindah-kenangan'?'stale-cover':undefined);
   await run(path,{method:'PATCH',user:'owner',body:{plan:'seindah-kenangan'}});assert.equal((await(await run(path,{user:'owner'})).json()).plan,plan);
-  const photo=()=>{const f=new FormData();f.set('photo',new Blob([new Uint8Array([255,216,255,224])],{type:'image/jpeg'}),'x.jpg');return f};
+  const photo=()=>{const f=new FormData();f.set('photo',new Blob([tinyJpeg],{type:'image/jpeg'}),'x.jpg');return f};
   for(let n=0;n<cap.photos;n++)await b.put('events/'+e.id+'/posts/photo-'+n+'.json',JSON.stringify({id:'p'+n,type:'photo',created:'2027-01-01'}));
   assert.equal((await run('/api/guest/'+e.id+'/posts',{method:'POST',body:photo()})).status,400);
   for(const key of [...b.m.keys()])if(key.includes('/posts/'))b.m.delete(key);

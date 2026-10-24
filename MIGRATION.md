@@ -12,6 +12,9 @@ Still to do before running outside Sites: admin and CHIP administration still au
 
 Legacy Sites sign-in/sign-out and admin login cannot be moved by copying source. Map old ownership only using an authenticated, auditable migration. Do not merge records merely by matching email strings.
 
+## Guest anti-spam
+`worker/ratelimit.mjs` throttles anonymous wishes, photos, RSVP and Duit Salam per event and per client IP (per 10 minutes / per day: wishes 10/30, photos 40/150, RSVP 10/30, Duit Salam 5/20). Blocked requests get 429 with Retry-After; only accepted submissions count; idempotent retries are free. IPs are stored only as truncated SHA-256 hashes under `events/<id>/limits/`, removed with the event. It relies on Cloudflare's `CF-Connecting-IP`; **if that header is absent nothing is limited**, so confirm it is present on the target host. It does not stop an attacker rotating many IPs: that still needs Turnstile or owner bulk-cleanup tools.
+
 ## Environment / bindings
 | Setting | Purpose |
 |---|---|

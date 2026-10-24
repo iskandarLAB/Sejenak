@@ -3,10 +3,12 @@
 ## Lowest-change architecture
 Cloudflare Workers + a private R2 bucket preserve the existing Worker API and BUCKET interface. Keep Supabase Auth and CHIP. Another host is possible but requires adapting the Request/Response runtime, R2 binding and authentication; it is not a static upload. Costs depend on usage and provider terms, not included estimates.
 
-## Blocking security issue before external public deployment
-Sites injects trusted `oai-authenticated-user-id` and `oai-authenticated-user-email` headers. Code in api.mjs/admin.mjs/chip.mjs still trusts this identity on native flows. These headers are NOT trusted on an ordinary public Worker, VPS or Node host. An attacker could send them directly if you deployed this unchanged.
+## Identity boundary (fixed) and remaining admin gap
+Sites injects trusted `oai-authenticated-user-id` and `oai-authenticated-user-email` headers. On any other host a client could send these headers itself. The Worker entry (`worker/boundary.mjs`, applied first in `scripts/build.mjs`) now **strips both headers on every request unless `SEJENAK_TRUST_SITES_IDENTITY` is exactly `true`**. Customer identity off Sites therefore comes only from server-verified Supabase sessions. `tests/identity-boundary.test.mjs` proves forged headers cannot read, edit or delete events, open admin, change support settings or reach CHIP admin.
 
-Before external exposure: strip inbound identity headers at the boundary; derive every customer identity from server-verified Supabase sessions; replace the legacy native-account path; implement verified admin authorization with explicit roles/allowlist. Preserve the fact that a matching Google email alone currently does not confer admin rights. Add negative tests that spoofed headers and cross-owner access are rejected. The example Wrangler configuration is local-development guidance only.
+**Before the next Sites deploy, set `SEJENAK_TRUST_SITES_IDENTITY=true` in Sites runtime configuration.** Without it, legacy ChatGPT owners and the admin panel appear signed out (fail closed, not insecure). Never set it on Cloudflare, a VPS or any host that does not strip and re-inject these headers itself.
+
+Still to do before running outside Sites: admin and CHIP administration still authorize only through the Sites identity, so they are unavailable elsewhere until a verified admin path exists (for example an explicit allowlist of Supabase user IDs, never email matching alone). Legacy native-account owners also need an authenticated, auditable migration.
 
 Legacy Sites sign-in/sign-out and admin login cannot be moved by copying source. Map old ownership only using an authenticated, auditable migration. Do not merge records merely by matching email strings.
 
@@ -16,6 +18,7 @@ Legacy Sites sign-in/sign-out and admin login cannot be moved by copying source.
 | BUCKET | private R2 binding, metadata and media |
 | SUPABASE_URL | public project URL |
 | SUPABASE_PUBLISHABLE_KEY | public browser-compatible key; server verifies identity |
+| SEJENAK_TRUST_SITES_IDENTITY | `true` only on ChatGPT Sites; unset everywhere else |
 | SEJENAK_ADMIN_EMAILS | private admin allowlist, currently for trusted Sites identity |
 | CHIP_CONFIG_KEY | secret encryption key; preserve securely to decrypt migrated config |
 | CHIP_MODE | test initially |
